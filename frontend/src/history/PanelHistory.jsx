@@ -18,7 +18,7 @@ export function PanelHistory() {
 
         try {
             const data = await makeRequest("history")
-            console.log(data)
+            // console.log(data)
             setHistory(data.challenges)
         } catch (err) {
             setError("Failed to load history.")

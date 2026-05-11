@@ -24,7 +24,7 @@ class ChallengeRequest(BaseModel):
         json_schema_extra = {"example": {"difficulty": "difficult"}}
 
 
-@router.get("/my-history")
+@router.get("/history")
 async def my_history(request: Request, db: Session = Depends(get_db)):
     user_details = authenticate_get_user_details(request)
     user_id = user_details.get("user_id")
