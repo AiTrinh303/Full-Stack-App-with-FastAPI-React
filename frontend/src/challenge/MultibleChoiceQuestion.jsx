@@ -4,10 +4,15 @@ export function MultipleChoiceQuestion({ challenge, showExplanation = false }) {
     const [selectedOption, setSelectedOption] = useState(null)
     const [shouldShowExplanation, setShouldShowExplanation] = useState(false)
 
+    if (!challenge) {
+        return <div>Loading...</div>
+    }
+
     const options =
         typeof challenge.options === 'string'
             ? JSON.parse(challenge.options)
-            : challenge.options
+            : challenge.options || []
+
 
     const handleOptionSelect = (index) => {
         if (selectedOption !== null) return

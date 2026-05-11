@@ -43,14 +43,21 @@ export function Generator() {
     }
 
     const getNextResetTime = () => {
-        if (!quota?.last_reset_data) return null
-        const resetDate = new Date(quota.last_reset_data)
+        if (!quota?.last_reset_date) return null
+        const resetDate = new Date(quota.last_reset_date)
         resetDate.setHours(resetDate.getHours() + 24)
         return resetDate
     }
 
     const isQuotaEmpty = quota?.quota_remaining === 0
-    
+
+   const handleDifficultyChange = (e) => {
+        const newDifficulty = e.target.value
+        setDifficulty(newDifficulty)
+        setChallenge(null)
+        setError(null)
+    }
+        
    return (
         <div className="max-w-2xl mx-auto space-y-8">
 
@@ -59,7 +66,7 @@ export function Generator() {
             Generator Challenge
         </h1>
         <p className="text-gray-500 text-sm">
-            Generate AI-powered questions and test your knowledge
+            Generate AI-powered PYTHON questions and test your knowledge
         </p>
     </div>
 
@@ -90,7 +97,7 @@ export function Generator() {
         <select
             id="difficulty"
             value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
+            onChange={handleDifficultyChange}
             disabled={isLoading}
             className="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
         >
@@ -101,7 +108,7 @@ export function Generator() {
 
         <button
             onClick={generateChallenge}
-            disabled={isLoading}
+            disabled={isLoading || quota?.quota_remaining === 0}
             className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
             {isLoading ? 'Generating...' : 'Generate'}
@@ -115,17 +122,14 @@ export function Generator() {
     )}
 
     {challenge && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md space-y-5">
-            <h2 className="text-xl font-semibold leading-relaxed text-gray-900">
-                {challenge.question}
-            </h2>
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md space-y-5">
 
-            <MultipleChoiceQuestion
-                options={challenge.options}
-                correctAnswer={challenge.correctAnswer}
-            />
-        </div>
-    )}
+        <MultipleChoiceQuestion
+            key={challenge.id}
+            challenge={challenge}
+        />
+        
     </div>
-        )
-    }
+    )}
+</div>
+)}
