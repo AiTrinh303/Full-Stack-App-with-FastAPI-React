@@ -103,11 +103,13 @@ Required:
 - Node.js and npm
 - A Clerk account and Clerk application
 - OpenAI API key
+- uv (Python package & runner)
 
-Recommended:
+If `uv` is not installed, run:
 
-- `uv` for running the backend using `pyproject.toml` and `uv.lock`
-- ngrok or Clerk CLI for testing Clerk webhooks locally
+```bash
+pip install uv
+```
 
 ## Backend Setup
 
@@ -129,12 +131,6 @@ Activate the virtual environment on Linux/macOS:
 source .venv/bin/activate
 ```
 
-Activate the virtual environment on Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
 Install dependencies:
 
 ```bash
@@ -148,14 +144,6 @@ CLERK_SECRET_KEY=your_clerk_secret_key
 OPENAI_API_KEY=your_openai_api_key
 CLERK_WEBHOOK_SECRET=your_clerk_webhook_signing_secret
 ```
-
-If your project still contains the `JWT_KEY` variable in `.env`, you may keep it:
-
-```env
-JWT_KEY=your_clerk_jwt_public_key
-```
-
-In the current implementation, `JWT_KEY` is not passed into `authenticate_request()`, but the variable may remain from an older version of the project.
 
 ### Backend Environment Variables
 
@@ -171,16 +159,12 @@ OpenAI API key. The file `backend/src/ai_generator.py` uses this key to generate
 
 Clerk webhook signing secret. The file `backend/src/routes/webhooks.py` uses this variable to verify incoming Clerk webhook requests.
 
-#### `JWT_KEY`
-
-This variable still exists in `.env`, but the current codebase does not directly use it.
-
 ## Run Backend
 
 From the `backend/` directory:
 
 ```bash
-python server.py
+uv run ./server.py
 ```
 
 The backend will run at:
@@ -195,14 +179,6 @@ API documentation is available at:
 http://localhost:8000/docs
 http://localhost:8000/redoc
 ```
-
-If using `uv`, run:
-
-```bash
-uv run python server.py
-```
-
-Note: the `GET /` route is currently commented out in `backend/src/app.py`, so the root health-check endpoint may not return a message.
 
 ## Frontend Setup
 
@@ -247,24 +223,6 @@ Clerk publishable key. The file `frontend/src/auth/ClerkProviderWithRoutes.jsx` 
 
 Backend base URL. The file `frontend/src/utils/app.js` uses this variable for API requests with the `/api` prefix.
 
-Example:
-
-```text
-VITE_API_URL=http://localhost:8000
-```
-
-When the frontend calls:
-
-```text
-makeRequest("quota")
-```
-
-The actual request URL becomes:
-
-```text
-http://localhost:8000/api/quota
-```
-
 ## Run Frontend
 
 From the `frontend/` directory:
@@ -297,20 +255,15 @@ The backend currently verifies requests against authorized parties defined in `b
 ```text
 http://localhost:5173
 http://localhost:5174
-https://full-stack-app-with-fastapi-react.onrender.com
+https://add-your-deployment-link-frontend
 ```
 
 FastAPI CORS currently allows origins configured in `backend/src/app.py`:
 
 ```text
 http://localhost:5173
-https://full-stack-app-with-fastapi-react.onrender.com
+https://add-your-deployment-link-frontend
 ```
-
-If Vite runs on another port, for example `5174`, update both files:
-
-- `backend/src/app.py`
-- `backend/src/utils.py`
 
 ## Clerk Webhook
 
@@ -557,14 +510,6 @@ If OpenAI fails or returns an invalid response, the backend falls back to a defa
 
 ## Common Commands
 
-Run backend:
-
-```bash
-cd backend
-source .venv/bin/activate
-python server.py
-```
-
 Run backend using `uv`:
 
 ```bash
@@ -585,86 +530,6 @@ Build frontend:
 cd frontend
 npm run build
 ```
-
-Lint frontend:
-
-```bash
-cd frontend
-npm run lint
-```
-
-Preview frontend build:
-
-```bash
-cd frontend
-npm run preview
-```
-
-## Troubleshooting
-
-### Frontend Missing Clerk Publishable Key
-
-Check `frontend/.env` or `frontend/.env.production`:
-
-```env
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-```
-
-After updating `.env`, restart the Vite dev server.
-
-### Frontend Cannot Reach Backend
-
-Check `frontend/.env.development`:
-
-```env
-VITE_API_URL=http://localhost:8000
-```
-
-Make sure the backend is running:
-
-```text
-http://localhost:8000/docs
-```
-
-### CORS Errors
-
-Check the `origins` list in:
-
-```text
-backend/src/app.py
-```
-
-If the frontend runs on `http://localhost:5174`, add that URL to the allowed origins list.
-
-### Authentication Errors
-
-Verify:
-
-- `CLERK_SECRET_KEY` in `backend/src/.env`
-- Authorized parties in `backend/src/utils.py`
-- The actual frontend URL being used in the browser
-
-The frontend URL must match one of the authorized parties.
-
-### Webhook Error: `CLERK_WEBHOOK_SECRET not set`
-
-Add the following variable to `backend/src/.env`:
-
-```env
-CLERK_WEBHOOK_SECRET=your_clerk_webhook_signing_secret
-```
-
-Restart the backend after updating `.env`.
-
-### OpenAI Cannot Generate Challenges
-
-Check:
-
-- `OPENAI_API_KEY` in `backend/src/.env`
-- Whether the API key is active
-- Whether the OpenAI account has access to the `gpt-4.1-nano` model
-
-If OpenAI fails, the app still provides a fallback question to avoid returning an empty response.
 
 ## Development Notes
 
