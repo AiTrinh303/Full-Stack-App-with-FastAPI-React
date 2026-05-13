@@ -102,6 +102,8 @@
 └── README.md
 ```
 
+---
+
 ## 🔄 Application Flow
 
 1. User logs in via Clerk 🔐  
@@ -114,6 +116,7 @@
 8. Frontend renders MCQ(Multiple Choice Questions) interface  
 9. User result is saved to history 📊  
 
+---
 ## ⚙️ Requirements
 
 - Python `3.12` or newer
@@ -127,6 +130,8 @@ Install uv:
 ```bash
 pip install uv
 ```
+
+---
 
 ## 🔧 Backend Setup
 
@@ -164,6 +169,7 @@ http://localhost:8000/docs
 http://localhost:8000/redoc
 ```
 
+---
 ## 💻 Frontend Setup
 
 ```bash
@@ -194,6 +200,7 @@ Frontend runs at:
 http://localhost:5173
 ```
 
+---
 ## 🚀 Deployment (Render)
 
 ### Backend (FastAPI)
@@ -209,6 +216,7 @@ uv run server.py
 npm install && npm run build
 ```
 
+---
 ## 🔐 Clerk Configuration
 
 ### Allowed Origins
@@ -218,6 +226,8 @@ http://localhost:5173
 http://localhost:5174
 https://your-frontend-domain.com
 ```
+
+---
 ## 🔌 API Endpoints
 
 ### Get Quota
@@ -236,6 +246,8 @@ POST /api/generate-challenge
 GET /api/history
 ```
 
+---
+
 ## 🤖 OpenAI Integration
 
 - **Model:** `gpt-4.1-nano`  
@@ -246,6 +258,8 @@ GET /api/history
 backend/src/prompts/challenge_system_prompt.txt
 ```
 
+---
+
 ## 🗄️ Database
 
 - **Database:** SQLite (database.db) 
@@ -255,6 +269,7 @@ backend/src/prompts/challenge_system_prompt.txt
 - challenges
 - challenge_quotas
 
+---
 ## 📈 Future Improvements
 - 🏆 Leaderboard system
 - 🧪 Code execution sandbox
@@ -262,6 +277,8 @@ backend/src/prompts/challenge_system_prompt.txt
 - 🎮 Gamification system
 - 📊 Advanced analytics dashboard
 
+
+---
 ## 👨‍💻 Author
 Built as a full-stack AI engineering project using:
 **React · FastAPI · OpenAI · Clerk · SQLite · Render**
