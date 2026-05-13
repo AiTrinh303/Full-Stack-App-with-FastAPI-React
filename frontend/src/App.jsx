@@ -1,7 +1,6 @@
 import './App.css'
 import ClerkProviderWithRoutes from './auth/ClerkProviderWithRoutes'
 import {Routes, Route} from 'react-router-dom'
-// import {Layout} from './layout/Layout.jsx'
 import {ProtectedLayout} from './layout/ProtectedLayout.jsx'
 import {Generator} from './challenge/Generator.jsx'
 import {PanelHistory} from './history/PanelHistory.jsx'

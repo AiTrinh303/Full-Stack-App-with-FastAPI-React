@@ -66,7 +66,7 @@ export function MultipleChoiceQuestion({ challenge, showExplanation = false }) {
                 ))}
             </div>
 
-            {shouldShowExplanation && selectedOption !== null && (
+            {(showExplanation || shouldShowExplanation) && selectedOption !== null && (
                 <div className="bg-gray-50 border rounded-lg p-4">
                     <h4 className="font-semibold mb-1">Explanation</h4>
                     <p className="text-sm text-gray-700">
