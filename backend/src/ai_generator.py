@@ -17,7 +17,7 @@ system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 def generate_challenge_with_ai(difficulty: str) -> Dict[str, Any]:
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-nano", #TODO: UPDATE MODEL LATER
+            model="gpt-4.1-nano", 
             messages=[
                 {"role": "system", "content": system_prompt},
                 {

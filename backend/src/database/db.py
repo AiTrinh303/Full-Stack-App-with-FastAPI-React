@@ -22,7 +22,7 @@ def reset_quota_if_needed(db: Session, quota: model.ChallengeQuota):
     now = datetime.now()
     time_passed = now - quota.last_reset_date
     if time_passed > timedelta(hours=24):
-        quota.quota_remaining = 10
+        quota.quota_remaining = 10 
         quota.last_reset_date = now
         db.commit()
         db.refresh(quota)
