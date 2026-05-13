@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException, Depends
-from ..database.db import create_challenge_quota
+from ..database.db import (
+    create_challenge_quota,
+    get_challenge_quota,
+)
 from ..database.model import get_db
 from svix.webhooks import Webhook
 import os
@@ -30,7 +33,11 @@ async def handle_user_created(request: Request, db = Depends(get_db)):
         user_data = data.get("data", {})
         user_id = user_data.get("id")
 
-        create_challenge_quota(db, user_id)
+        # Avoid duplicate quota creation on webhook retry
+        existing_quota = get_challenge_quota(db, user_id)
+
+        if not existing_quota:
+            create_challenge_quota(db, user_id)
 
         return {"status": "success"}
     except Exception as e:
