@@ -4,9 +4,9 @@ from .routes import challenge, webhooks
 
 app = FastAPI()
 
-# @app.get("/")
-# def home():
-#     return {"message": "Backend is running"}
+@app.get("/")
+def home():
+    return {"message": "Backend is running"}
 
 origins = [
     "http://localhost:5173",

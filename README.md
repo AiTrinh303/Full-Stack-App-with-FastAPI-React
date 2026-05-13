@@ -1,22 +1,42 @@
 # AI Challenge Generator
 
-AI Challenge Generator is a full-stack web app that creates Python multiple-choice coding challenges with AI. Users sign in with Clerk, generate challenges by difficulty, answer them in the browser, and view their previous challenge history.
+AI Challenge Generator is a full-stack application that generates Python multiple-choice challenges using AI. Users can sign in with Clerk, generate challenges based on difficulty level, answer questions, view explanations, and review their challenge history.
 
-The project has two parts:
+The project consists of two main parts:
 
-- `frontend/`: React 19 + Vite + Tailwind CSS + Clerk React
+- `frontend/`: React + Vite + Tailwind CSS + Clerk React
 - `backend/`: FastAPI + SQLAlchemy + SQLite + Clerk Backend API + OpenAI
 
-## Features
+## Table of Contents
 
-- Public landing page with sign-in and sign-up links
-- Clerk authentication for protected pages
-- AI-generated Python questions for `easy`, `medium`, and `hard` difficulty levels
-- Multiple-choice answer UI with instant correct/incorrect feedback
-- Explanation shown after answering a generated question
-- Daily challenge quota stored per Clerk user
-- Challenge history stored in SQLite and shown in the frontend
-- Clerk webhook endpoint for creating quota records when new users are created
+- [Key Features](#key-features)
+- [Project Structure](#project-structure)
+- [Application Flow](#application-flow)
+- [Requirements](#requirements)
+- [Backend Setup](#backend-setup)
+- [Run Backend](#run-backend)
+- [Frontend Setup](#frontend-setup)
+- [Run Frontend](#run-frontend)
+- [Clerk Configuration](#clerk-configuration)
+- [Backend API](#backend-api)
+- [Database](#database)
+- [Troubleshooting](#troubleshooting)
+
+## Key Features
+
+- Public landing page at `/`
+- Sign in and sign up with Clerk
+- Protected routes for `/generate` and `/history`
+- Generate Python questions using OpenAI with difficulty levels:
+  - `easy`
+  - `medium`
+  - `hard`
+- Display multiple-choice questions and answer options
+- Show correct/incorrect feedback after answering
+- Save generated challenges into SQLite
+- Display challenge history per user
+- Manage per-user challenge quota
+- Clerk webhook integration for automatic quota creation
 
 ## Project Structure
 
@@ -26,6 +46,7 @@ The project has two parts:
 │   ├── server.py
 │   ├── requirements.txt
 │   ├── pyproject.toml
+│   ├── uv.lock
 │   ├── database.db
 │   └── src/
 │       ├── app.py
@@ -34,14 +55,16 @@ The project has two parts:
 │       ├── prompts/
 │       │   └── challenge_system_prompt.txt
 │       ├── database/
-│       │   ├── db.py
-│       │   └── model.py
+│       │   ├── model.py
+│       │   └── db.py
 │       └── routes/
 │           ├── challenge.py
 │           └── webhooks.py
 ├── frontend/
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── vite.config.js
+│   ├── index.html
 │   └── src/
 │       ├── App.jsx
 │       ├── main.jsx
@@ -54,196 +77,222 @@ The project has two parts:
 └── README.md
 ```
 
-## How The App Works
+## Application Flow
 
-1. The user opens the React app.
-2. Clerk handles sign-in or sign-up.
-3. Protected pages use Clerk to require an authenticated user.
-4. The frontend gets a Clerk token with `getToken()`.
-5. API requests are sent to the FastAPI backend with an `Authorization: Bearer <token>` header.
-6. The backend verifies the Clerk token.
+1. The user opens the React frontend.
+2. The user signs in or signs up using Clerk.
+3. Clerk provides an authentication token to the frontend.
+4. The frontend sends requests to the backend using `fetch` with the following header:
+
+```text
+Authorization: Bearer <clerk_token>
+```
+
+5. The backend verifies the token using the Clerk Backend API.
+6. The backend extracts the `user_id` from the Clerk token.
 7. When the user generates a challenge, the backend checks the user's quota.
-8. If quota is available, the backend asks OpenAI to generate a Python multiple-choice question.
-9. The generated challenge is saved in SQLite.
-10. The frontend displays the question, answer options, and explanation after the user chooses an answer.
+8. If quota is available, the backend calls OpenAI to generate a challenge.
+9. The challenge is saved into SQLite.
+10. The frontend displays the question, options, and explanation after the user selects an answer.
 
-## Prerequisites
+## Requirements
 
-Install these before running the project:
+Required:
 
 - Python `3.12` or newer
 - Node.js and npm
-- A Clerk application
-- An OpenAI API key
+- A Clerk account and Clerk application
+- OpenAI API key
 
-Optional:
+Recommended:
 
-- `uv`, if you prefer using the Python project files in `backend/pyproject.toml` and `backend/uv.lock`
-- A webhook forwarding tool such as ngrok or the Clerk CLI if you want to test Clerk webhooks locally
+- `uv` for running the backend using `pyproject.toml` and `uv.lock`
+- ngrok or Clerk CLI for testing Clerk webhooks locally
 
 ## Backend Setup
 
-Go to the backend folder:
+Go to the backend directory:
 
 ```bash
 cd backend
 ```
 
-Create and activate a Python virtual environment:
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
+```
+
+Activate the virtual environment on Linux/macOS:
+
+```bash
 source .venv/bin/activate
 ```
 
-On Windows PowerShell, activate it with:
+Activate the virtual environment on Windows PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
 
-Install backend dependencies:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Create the backend environment file at `backend/src/.env`:
+Create the file `backend/src/.env`:
 
 ```env
 CLERK_SECRET_KEY=your_clerk_secret_key
-JWT_KEY=your_clerk_jwt_public_key
 OPENAI_API_KEY=your_openai_api_key
 CLERK_WEBHOOK_SECRET=your_clerk_webhook_signing_secret
 ```
 
+If your project still contains the `JWT_KEY` variable in `.env`, you may keep it:
+
+```env
+JWT_KEY=your_clerk_jwt_public_key
+```
+
+In the current implementation, `JWT_KEY` is not passed into `authenticate_request()`, but the variable may remain from an older version of the project.
+
 ### Backend Environment Variables
 
-`CLERK_SECRET_KEY`
+#### `CLERK_SECRET_KEY`
 
-Your Clerk backend secret key. The backend uses this to initialize the Clerk SDK.
+Clerk secret key used by the backend. The file `backend/src/utils.py` uses this variable to initialize the Clerk SDK client.
 
-`JWT_KEY`
+#### `OPENAI_API_KEY`
 
-The Clerk JWT public key used when authenticating incoming requests. This is passed to Clerk's `authenticate_request()` helper.
+OpenAI API key. The file `backend/src/ai_generator.py` uses this key to generate challenges using the `gpt-4.1-nano` model.
 
-`OPENAI_API_KEY`
+#### `CLERK_WEBHOOK_SECRET`
 
-Your OpenAI API key. The backend uses this in `src/ai_generator.py` to generate challenge content.
+Clerk webhook signing secret. The file `backend/src/routes/webhooks.py` uses this variable to verify incoming Clerk webhook requests.
 
-`CLERK_WEBHOOK_SECRET`
+#### `JWT_KEY`
 
-The signing secret for the Clerk webhook endpoint. It is required by `POST /webhooks/clerk`.
+This variable still exists in `.env`, but the current codebase does not directly use it.
 
-## Run The Backend
+## Run Backend
 
-From the `backend/` folder, run:
+From the `backend/` directory:
 
 ```bash
 python server.py
 ```
 
-The backend starts on:
+The backend will run at:
 
 ```text
 http://localhost:8000
 ```
 
-Test that it is running:
-
-```bash
-curl http://localhost:8000/
-```
-
-Expected response:
-
-```json
-{"message":"Backend is running"}
-```
-
-The SQLite database is created automatically from the SQLAlchemy models. The current database file is:
+API documentation is available at:
 
 ```text
-backend/database.db
+http://localhost:8000/docs
+http://localhost:8000/redoc
 ```
+
+If using `uv`, run:
+
+```bash
+uv run python server.py
+```
+
+Note: the `GET /` route is currently commented out in `backend/src/app.py`, so the root health-check endpoint may not return a message.
 
 ## Frontend Setup
 
-Open a second terminal and go to the frontend folder:
+Open a second terminal and go to the frontend directory:
 
 ```bash
 cd frontend
 ```
 
-Install frontend dependencies:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Create or update the frontend environment files.
-
-For local development, use `frontend/.env` or `frontend/.env.development`:
+Create or update `frontend/.env`:
 
 ```env
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+```
+
+Create or update `frontend/.env.development`:
+
+```env
 VITE_API_URL=http://localhost:8000
 ```
 
-For production, use `frontend/.env.production`:
+For production deployment, create or update `frontend/.env.production`:
 
 ```env
 VITE_API_URL=https://your-backend-domain.com
-```
-
-If your production build also needs the Clerk key from this file, include:
-
-```env
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 ```
 
 ### Frontend Environment Variables
 
-`VITE_CLERK_PUBLISHABLE_KEY`
+#### `VITE_CLERK_PUBLISHABLE_KEY`
 
-Your Clerk publishable key. The React app requires this before rendering the Clerk provider.
+Clerk publishable key. The file `frontend/src/auth/ClerkProviderWithRoutes.jsx` requires this variable to render the Clerk provider.
 
-`VITE_API_URL`
+#### `VITE_API_URL`
 
-The backend base URL. In local development this should usually be `http://localhost:8000`.
+Backend base URL. The file `frontend/src/utils/app.js` uses this variable for API requests with the `/api` prefix.
 
-`VITE_DEBUG`
+Example:
 
-This exists in the local environment files but is not currently used by the source code.
+```text
+VITE_API_URL=http://localhost:8000
+```
 
-## Run The Frontend
+When the frontend calls:
 
-From the `frontend/` folder, run:
+```text
+makeRequest("quota")
+```
+
+The actual request URL becomes:
+
+```text
+http://localhost:8000/api/quota
+```
+
+## Run Frontend
+
+From the `frontend/` directory:
 
 ```bash
 npm run dev
 ```
 
-The frontend normally starts on:
+By default, Vite usually runs at:
 
 ```text
 http://localhost:5173
 ```
 
-Open that URL in your browser.
+Open this URL in your browser.
 
 ## Clerk Configuration
 
-In your Clerk dashboard, configure the app so local development URLs are allowed.
+In the Clerk dashboard, configure the following for local development.
 
-Recommended local URLs:
+Add these URLs to Clerk allowed origins / authorized parties:
 
 ```text
 http://localhost:5173
 http://localhost:5174
 ```
 
-The backend currently allows authenticated requests from these authorized parties:
+The backend currently verifies requests against authorized parties defined in `backend/src/utils.py`:
 
 ```text
 http://localhost:5173
@@ -251,36 +300,39 @@ http://localhost:5174
 https://full-stack-app-with-fastapi-react.onrender.com
 ```
 
-The FastAPI CORS configuration currently allows:
+FastAPI CORS currently allows origins configured in `backend/src/app.py`:
 
 ```text
 http://localhost:5173
 https://full-stack-app-with-fastapi-react.onrender.com
 ```
 
-If Vite starts on a different port, update the CORS `origins` list in `backend/src/app.py` and the Clerk authorized parties list in `backend/src/utils.py`.
+If Vite runs on another port, for example `5174`, update both files:
 
-## Clerk Webhook Setup
+- `backend/src/app.py`
+- `backend/src/utils.py`
 
-The backend has a Clerk webhook route:
+## Clerk Webhook
+
+The backend includes the webhook endpoint:
 
 ```text
 POST /webhooks/clerk
 ```
 
-This endpoint listens for Clerk events. When the event type is `user.created`, the backend creates an initial challenge quota record for that user.
+This endpoint receives events from Clerk. When the event type is `user.created`, the backend automatically creates a quota record for the new user.
 
-To configure it:
+### Setup Steps
 
 1. Open the Clerk dashboard.
-2. Go to the webhook settings for your application.
-3. Add an endpoint that points to your backend:
+2. Navigate to the Webhooks section.
+3. Create a new endpoint:
 
 ```text
 https://your-backend-domain.com/webhooks/clerk
 ```
 
-For local testing, expose your backend with a tunnel and use the tunnel URL:
+For local testing, use ngrok or another tunnel tool:
 
 ```text
 https://your-tunnel-url/webhooks/clerk
@@ -288,31 +340,46 @@ https://your-tunnel-url/webhooks/clerk
 
 4. Subscribe to the `user.created` event.
 5. Copy the webhook signing secret.
-6. Put the value in `backend/src/.env` as `CLERK_WEBHOOK_SECRET`.
+6. Add it to `backend/src/.env`:
 
-## API Routes
-
-### Health Check
-
-```text
-GET /
+```env
+CLERK_WEBHOOK_SECRET=your_clerk_webhook_signing_secret
 ```
 
-Returns:
+## Backend API
 
-```json
-{"message":"Backend is running"}
-```
+All challenge APIs are mounted with the `/api` prefix.
 
-### Get Challenge Quota
+### Get Quota
 
 ```text
 GET /api/quota
 ```
 
-Requires a Clerk bearer token.
+Requires Clerk authentication.
 
-Returns the current user's remaining challenge quota and reset date.
+Example response when quota exists:
+
+```json
+{
+  "id": 1,
+  "user_id": "user_xxx",
+  "quota_remaining": 49,
+  "last_reset_date": "2026-05-13T12:00:00"
+}
+```
+
+If the user does not yet have a quota record:
+
+```json
+{
+  "user_id": "user_xxx",
+  "quota_remaining": 0,
+  "last_reset_date": "2026-05-13T12:00:00"
+}
+```
+
+When the user generates their first challenge, the backend automatically creates a quota if it does not exist.
 
 ### Generate Challenge
 
@@ -320,7 +387,7 @@ Returns the current user's remaining challenge quota and reset date.
 POST /api/generate-challenge
 ```
 
-Requires a Clerk bearer token.
+Requires Clerk authentication.
 
 Request body:
 
@@ -330,7 +397,7 @@ Request body:
 }
 ```
 
-Valid difficulty values used by the frontend:
+Supported difficulty values:
 
 ```text
 easy
@@ -338,7 +405,7 @@ medium
 hard
 ```
 
-Returns a generated challenge:
+Response:
 
 ```json
 {
@@ -352,7 +419,11 @@ Returns a generated challenge:
 }
 ```
 
-If the user has no quota left, the backend returns a quota error.
+If quota is exceeded, the backend throws a quota error and the frontend displays:
+
+```text
+Daily quota exceeded
+```
 
 ### Get Challenge History
 
@@ -360,13 +431,24 @@ If the user has no quota left, the backend returns a quota error.
 GET /api/history
 ```
 
-Requires a Clerk bearer token.
+Requires Clerk authentication.
 
-Returns all challenges created by the current user:
+Response:
 
 ```json
 {
-  "challenges": []
+  "challenges": [
+    {
+      "id": 1,
+      "difficulty": "easy",
+      "created_by": "user_xxx",
+      "title": "Question title",
+      "options": "[\"Option 1\", \"Option 2\", \"Option 3\", \"Option 4\"]",
+      "correct_answer_id": 0,
+      "explanation": "Why the answer is correct",
+      "date_created": "2026-05-13T12:00:00"
+    }
+  ]
 }
 ```
 
@@ -376,69 +458,91 @@ Returns all challenges created by the current user:
 POST /webhooks/clerk
 ```
 
-Verifies the Clerk webhook signature and creates a quota record when a new Clerk user is created.
+This endpoint does not use the `/api` prefix. It verifies webhook signatures using `CLERK_WEBHOOK_SECRET`.
 
-## Frontend Pages
+## Frontend Routes
 
-`/`
+### `/`
 
-Landing page with links to sign in and sign up.
+Landing page.
 
-`/sign-in/*`
+### `/sign-in/*`
 
 Clerk sign-in page.
 
-`/sign-up/*`
+### `/sign-up/*`
 
 Clerk sign-up page.
 
-`/generate`
+### `/generate`
 
-Protected page where signed-in users can generate AI Python challenges.
+Challenge generation page. This route is protected using `ProtectedLayout`.
 
-`/history`
+### `/history`
 
-Protected page where signed-in users can review previously generated challenges.
+Challenge history page. This route is also protected using `ProtectedLayout`.
 
-## Database Models
+## Database
 
-The backend uses SQLite through SQLAlchemy.
+The backend uses SQLite with SQLAlchemy.
 
-### Challenge
+Current database file:
 
-Stores each generated challenge.
+```text
+backend/database.db
+```
 
-Important fields:
+Tables are defined in:
 
+```text
+backend/src/database/model.py
+```
+
+### `challenges` Table
+
+Stores generated challenges.
+
+Main columns:
+
+- `id`
 - `difficulty`
+- `date_created`
 - `created_by`
 - `title`
 - `options`
 - `correct_answer_id`
 - `explanation`
-- `date_created`
 
-### ChallengeQuota
+### `challenge_quotas` Table
 
-Stores each user's available quota.
+Stores user quota information.
 
-Important fields:
+Main columns:
 
+- `id`
 - `user_id`
 - `quota_remaining`
 - `last_reset_date`
 
-New quota records default to `50` remaining challenges. When a quota is reset after 24 hours, the code currently resets it to `10`.
+Default value for `quota_remaining` is `50`.
+
+Inside `reset_quota_if_needed()`, if more than 24 hours have passed, the quota resets to `10`.
 
 ## OpenAI Challenge Generation
 
-The backend prompt is stored in:
+AI challenge generation file:
+
+```text
+backend/src/ai_generator.py
+```
+
+System prompt location:
 
 ```text
 backend/src/prompts/challenge_system_prompt.txt
 ```
 
-The AI generator asks OpenAI to return JSON with this shape:
+The backend expects OpenAI to return JSON in the following format:
 
 ```json
 {
@@ -449,11 +553,11 @@ The AI generator asks OpenAI to return JSON with this shape:
 }
 ```
 
-If AI generation fails, the backend returns a fallback Python list question so the app can still respond.
+If OpenAI fails or returns an invalid response, the backend falls back to a default Python `append()` question.
 
-## Useful Commands
+## Common Commands
 
-Backend:
+Run backend:
 
 ```bash
 cd backend
@@ -461,7 +565,14 @@ source .venv/bin/activate
 python server.py
 ```
 
-Frontend:
+Run backend using `uv`:
+
+```bash
+cd backend
+uv run python server.py
+```
+
+Run frontend:
 
 ```bash
 cd frontend
@@ -482,7 +593,7 @@ cd frontend
 npm run lint
 ```
 
-Preview production frontend build:
+Preview frontend build:
 
 ```bash
 cd frontend
@@ -491,74 +602,75 @@ npm run preview
 
 ## Troubleshooting
 
-### Frontend says the Clerk publishable key is missing
+### Frontend Missing Clerk Publishable Key
 
-Make sure this variable exists in the frontend environment file:
+Check `frontend/.env` or `frontend/.env.production`:
 
 ```env
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 ```
 
-Then restart the Vite dev server.
+After updating `.env`, restart the Vite dev server.
 
-### Frontend cannot reach the backend
+### Frontend Cannot Reach Backend
 
-Check `VITE_API_URL`.
-
-For local development:
+Check `frontend/.env.development`:
 
 ```env
 VITE_API_URL=http://localhost:8000
 ```
 
-Also confirm the backend is running:
+Make sure the backend is running:
 
-```bash
-curl http://localhost:8000/
+```text
+http://localhost:8000/docs
 ```
 
-### Browser shows a CORS error
+### CORS Errors
 
-Make sure the frontend URL is listed in `backend/src/app.py`.
+Check the `origins` list in:
 
-For example, if Vite runs on `http://localhost:5174`, add it to the `origins` list.
-
-### API returns authentication errors
-
-Check these values in `backend/src/.env`:
-
-```env
-CLERK_SECRET_KEY=your_clerk_secret_key
-JWT_KEY=your_clerk_jwt_public_key
+```text
+backend/src/app.py
 ```
 
-Also check the authorized parties in `backend/src/utils.py`. They must match the frontend URL used in the browser.
+If the frontend runs on `http://localhost:5174`, add that URL to the allowed origins list.
 
-### Webhook returns `CLERK_WEBHOOK_SECRET not set`
+### Authentication Errors
 
-Add the webhook signing secret to `backend/src/.env`:
+Verify:
+
+- `CLERK_SECRET_KEY` in `backend/src/.env`
+- Authorized parties in `backend/src/utils.py`
+- The actual frontend URL being used in the browser
+
+The frontend URL must match one of the authorized parties.
+
+### Webhook Error: `CLERK_WEBHOOK_SECRET not set`
+
+Add the following variable to `backend/src/.env`:
 
 ```env
 CLERK_WEBHOOK_SECRET=your_clerk_webhook_signing_secret
 ```
 
-Restart the backend after changing the environment file.
+Restart the backend after updating `.env`.
 
-### OpenAI generation fails
+### OpenAI Cannot Generate Challenges
 
 Check:
 
-- `OPENAI_API_KEY` exists in `backend/src/.env`
-- the API key is valid
-- the OpenAI account has access to the configured model
+- `OPENAI_API_KEY` in `backend/src/.env`
+- Whether the API key is active
+- Whether the OpenAI account has access to the `gpt-4.1-nano` model
 
-The app has a fallback challenge, so generation failures may still return a basic Python question.
+If OpenAI fails, the app still provides a fallback question to avoid returning an empty response.
 
 ## Development Notes
 
-- The backend loads environment variables with `python-dotenv`.
-- The frontend only exposes environment variables prefixed with `VITE_`.
-- The backend currently runs on port `8000`.
-- The Vite frontend normally runs on port `5173`.
-- The database tables are created automatically when `backend/src/database/model.py` is imported.
-- Keep secret values out of git. Do not commit real `.env` files.
+- The backend loads environment variables using `python-dotenv`.
+- The frontend can only access environment variables prefixed with `VITE_`.
+- The backend runs on port `8000` by default.
+- Vite runs on port `5173` by default.
+- `frontend/src/layout/Layout.jsx` no longer exists in the current source code; routing now uses `ProtectedLayout.jsx`.
+- Never commit real secrets inside `.env` files.
