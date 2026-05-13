@@ -56,16 +56,35 @@ The project has two parts:
 
 ## How The App Works
 
-1. The user opens the React app.
-2. Clerk handles sign-in or sign-up.
-3. Protected pages use Clerk to require an authenticated user.
-4. The frontend gets a Clerk token with `getToken()`.
-5. API requests are sent to the FastAPI backend with an `Authorization: Bearer <token>` header.
-6. The backend verifies the Clerk token.
-7. When the user generates a challenge, the backend checks the user's quota.
-8. If quota is available, the backend asks OpenAI to generate a Python multiple-choice question.
-9. The generated challenge is saved in SQLite.
-10. The frontend displays the question, answer options, and explanation after the user chooses an answer.
+The flow of the application is as follows:
+
+```mermaid
+flowchart TD
+
+A[User opens React app] --> B[Clerk: Sign-in / Sign-up]
+
+B --> C{Authenticated?}
+C -- No --> B
+C -- Yes --> D[Access protected pages]
+
+D --> E[getToken() from Clerk]
+E --> F[Send API request to FastAPI<br/>Authorization: Bearer <token>]
+
+F --> G[Backend verifies Clerk token]
+
+G --> H{Quota available?}
+H -- No --> H1[Reject / Show quota limit]
+H -- Yes --> I[Call OpenAI API<br/>Generate Python MCQ]
+
+I --> J[Save challenge to SQLite]
+
+J --> K[Return question + options]
+
+K --> L[Frontend displays question]
+
+L --> M[User selects answer]
+
+M --> N[Frontend shows result + explanation]
 
 ## Prerequisites
 
